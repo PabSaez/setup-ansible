@@ -1,0 +1,152 @@
+---
+- name: Installation de Linux et configuration des logiciels
+  hosts: laptops
+  become: yes
+
+  vars:
+    common_software:
+      - git
+      - curl
+      - vim
+      - htop
+      - docker.io
+      - vlc
+      - terminator
+      - openssh-server
+      - openssh-client
+      - kwrite
+      - tigervnc-standalone-server
+      - xfce4
+      - xfce4-goodies
+      - wget
+      - ansible
+      - python3-pip
+      - tree
+      - tar
+      - build-essential
+      - software-properties-common
+      - unzip
+      - zsh
+      - cargo
+      - python3-pip
+
+  tasks:
+    - name: Mise à jour et mise à niveau du système
+      apt:
+        update_cache: yes
+        upgrade: dist
+
+    - name: Installation de snapd
+      apt:
+        name: snapd
+        state: present
+
+    - name: Vérifier l'installation de snapd
+      command: snap version
+      register: snap_version
+      ignore_errors: yes
+
+    - debug:
+        msg: "Version de snap: {{ snap_version.stdout }}"
+
+    - name: Installation des packages nécessaires
+      apt:
+        name: "{{ common_software }}"
+        state: present
+
+    - name: Ajouter la clé du dépôt Brave
+      apt_key:
+        url: https://brave-browser-apt-release.s3.brave.com/brave-core.asc
+        state: present
+
+    - name: Ajouter le dépôt Brave à sources.list.d
+      apt_repository:
+        repo: "deb [arch=amd64] https://brave-browser-apt-release.s3.brave.com/ stable main"
+        state: present
+
+    - name: Installation de Brave
+      apt:
+        name: brave-browser
+        state: present
+        update_cache: yes
+
+    - name: Installation de ProtonMail Bridge
+      shell: |
+        wget https://proton.me/download/mail/linux/ProtonMail-desktop-beta.deb
+        sudo dpkg -i ProtonMail-desktop-beta.deb
+        sudo apt-get install -f -y
+
+    - name: Installation de Proton Pass
+      shell: |
+        wget https://proton.me/download/PassDesktop/linux/x64/ProtonPass_1.21.0.deb
+        sudo dpkg -i ProtonPass_1.21.0.deb
+        sudo apt-get install -f -y
+
+    - name: Installation de Discord
+      snap:
+        name: discord
+        state: present
+
+    - name: Installation de Telegram
+      snap:
+        name: telegram-desktop
+        state: present
+
+    - name: Installation de Visual Studio Code
+      snap:
+        name: code
+        classic: yes
+        state: present
+
+    - name: Installation de Oh-my-Zsh
+      shell: |
+        sudo apt install zsh -y
+        sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
+
+    - name: Installation de JetBrains Toolbox
+      shell: |
+        wget https://download.jetbrains.com/toolbox/jetbrains-toolbox-1.22.10970.tar.gz
+        tar -xzf jetbrains-toolbox-1.22.10970.tar.gz
+        sudo mv jetbrains-toolbox-*/jetbrains-toolbox /usr/local/bin/
+
+    - name: Télécharger le package Insync
+      get_url:
+        url: https://cdn.insynchq.com/builds/linux/3.9.3.60019/insync_3.9.3.60019-noble_amd64.deb
+        dest: /tmp/insync.deb
+
+    - name: Installer Insync
+      apt:
+        deb: /tmp/insync.deb
+
+    - name: Installation de Microsoft Teams
+      snap:
+        name: teams-for-linux
+        state: present
+
+    - name: Installation de Ulauncher
+      shell: |
+        sudo add-apt-repository ppa:agornostal/ulauncher -y
+        sudo apt update
+        sudo apt install ulauncher -y
+
+    - name: Installation de VNC Viewer
+      shell: |
+        wget https://www.realvnc.com/download/file/viewer.files/VNC-Viewer-6.21.920-Linux-x64.deb
+        sudo dpkg -i VNC-Viewer-6.21.920-Linux-x64.deb
+        sudo apt-get install -f -y
+
+    - name: Télécharger le package VirtualBox
+      get_url:
+        url: https://download.virtualbox.org/virtualbox/7.0.20/virtualbox-7.0_7.0.20-163906~Ubuntu~noble_amd64.deb
+        dest: /tmp/virtualbox.deb
+
+    - name: Installer VirtualBox
+      apt:
+        deb: /tmp/virtualbox.deb
+
+    - name: Ajout de l'utilisateur actuel au groupe Docker
+      user:
+        name: "{{ ansible_user_id }}"
+        groups: docker
+        append: yes
+
