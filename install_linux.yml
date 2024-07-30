@@ -1,6 +1,6 @@
 ---
 - name: Installation de Linux et configuration des logiciels
-  hosts: laptops
+  hosts: localhost
   become: yes
 
   vars:
@@ -70,7 +70,7 @@
         state: present
         update_cache: yes
 
-    - name: Installation de ProtonMail Bridge
+    - name: Installation de ProtonMail
       shell: |
         wget https://proton.me/download/mail/linux/ProtonMail-desktop-beta.deb
         sudo dpkg -i ProtonMail-desktop-beta.deb
@@ -149,4 +149,3 @@
         name: "{{ ansible_user_id }}"
         groups: docker
         append: yes
-
