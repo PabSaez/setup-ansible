@@ -29,6 +29,8 @@
       - zsh
       - cargo
       - python3-pip
+      - zoxide
+      - fzf
 
   tasks:
     - name: Mise à jour et mise à niveau du système
@@ -101,7 +103,9 @@
     - name: Installation de Oh-my-Zsh
       shell: |
         sudo apt install zsh -y
+        chsh -s $(which zsh)
         sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
+        echo 'eval "$(zoxide init zsh)"' >> ~/.zshrc
 
     - name: Installation de JetBrains Toolbox
       shell: |
