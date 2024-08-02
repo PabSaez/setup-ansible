@@ -1,4 +1,4 @@
----
+--- 
 - name: Installation de Linux et configuration des logiciels
   hosts: localhost
   become: yes
