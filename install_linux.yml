@@ -31,12 +31,20 @@
       - python3-pip
       - zoxide
       - fzf
+      - flatpak
+      - gnome-software-plugin-flatpak
+      - gnome-tweaks
 
   tasks:
     - name: Mise à jour et mise à niveau du système
       apt:
         update_cache: yes
         upgrade: dist
+
+    - name: Installation des packages nécessaires
+      apt:
+        name: "{{ common_software }}"
+        state: present
 
     - name: Installation de snapd
       apt:
@@ -50,11 +58,6 @@
 
     - debug:
         msg: "Version de snap: {{ snap_version.stdout }}"
-
-    - name: Installation des packages nécessaires
-      apt:
-        name: "{{ common_software }}"
-        state: present
 
     - name: Ajouter la clé du dépôt Brave
       apt_key:
@@ -153,3 +156,11 @@
         name: "{{ ansible_user_id }}"
         groups: docker
         append: yes
+
+    - name: Configurer "click-action" pour Gnome Shell
+      shell: |
+        gsettings set org.gnome.shell.extensions.dash-to-dock click-action 'minimize'
+
+    - name: Configurer Flatpak
+      shell: |
+        sudo flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
