@@ -11,7 +11,7 @@
       - htop
       - docker.io
       - vlc
-      - terminator
+      - wezterm
       - openssh-server
       - openssh-client
       - kwrite
@@ -34,6 +34,7 @@
       - flatpak
       - gnome-software-plugin-flatpak
       - gnome-tweaks
+      - neovim
 
   tasks:
     - name: Mise à jour et mise à niveau du système
@@ -41,74 +42,111 @@
         update_cache: yes
         upgrade: dist
 
-    - name: Installation des packages nécessaires
+    - name: Ajouter la clé du dépôt WezTerm
+      shell: |
+        curl -fsSL https://apt.fury.io/wez/gpg.key | sudo gpg --yes --dearmor -o /usr/share/keyrings/wezterm-fury.gpg
+        echo 'deb [signed-by=/usr/share/keyrings/wezterm-fury.gpg] https://apt.fury.io/wez/ * *' | sudo tee /etc/apt/sources.list.d/wezterm.list
+
+    - name: Mise à jour des sources et installation des packages nécessaires
       apt:
         name: "{{ common_software }}"
         state: present
-
-    - name: Installation de snapd
-      apt:
-        name: snapd
-        state: present
-
-    - name: Vérifier l'installation de snapd
-      command: snap version
-      register: snap_version
-      ignore_errors: yes
-
-    - debug:
-        msg: "Version de snap: {{ snap_version.stdout }}"
-
-    - name: Ajouter la clé du dépôt Brave
-      apt_key:
-        url: https://brave-browser-apt-release.s3.brave.com/brave-core.asc
-        state: present
-
-    - name: Ajouter le dépôt Brave à sources.list.d
-      apt_repository:
-        repo: "deb [arch=amd64] https://brave-browser-apt-release.s3.brave.com/ stable main"
-        state: present
-
-    - name: Installation de Brave
-      apt:
-        name: brave-browser
-        state: present
         update_cache: yes
 
-    - name: Installation de ProtonMail
+    - name: Définir WezTerm comme terminal par défaut
       shell: |
-        wget https://proton.me/download/mail/linux/ProtonMail-desktop-beta.deb
-        sudo dpkg -i ProtonMail-desktop-beta.deb
-        sudo apt-get install -f -y
+        sudo update-alternatives --set x-terminal-emulator /usr/bin/wezterm
 
-    - name: Installation de Proton Pass
+    - name: Créer le répertoire de configuration de WezTerm
+      file:
+        path: ~/.config/wezterm
+        state: directory
+        mode: '0755'
+
+    - name: Configurer WezTerm avec un thème personnalisé
+      copy:
+        dest: ~/.config/wezterm/wezterm.lua
+        content: |
+          local wezterm = require 'wezterm';
+
+          return {
+            color_scheme = "Catppuccin Mocha",
+          }
+
+    - name: Installation de zsh-autosuggestions
       shell: |
-        wget https://proton.me/download/PassDesktop/linux/x64/ProtonPass_1.21.0.deb
-        sudo dpkg -i ProtonPass_1.21.0.deb
-        sudo apt-get install -f -y
-
-    - name: Installation de Discord
-      snap:
-        name: discord
-        state: present
-
-    - name: Installation de Telegram
-      snap:
-        name: telegram-desktop
-        state: present
-
-    - name: Installation de Visual Studio Code
-      snap:
-        name: code
-        classic: yes
-        state: present
+        echo 'deb http://download.opensuse.org/repositories/shells:/zsh-users:/zsh-autosuggestions/xUbuntu_22.04/ /' | sudo tee /etc/apt/sources.list.d/shells:zsh-users:zsh-autosuggestions.list
+        curl -fsSL https://download.opensuse.org/repositories/shells:zsh-users:zsh-autosuggestions/xUbuntu_22.04/Release.key | gpg --dearmor | sudo tee /etc/apt/trusted.gpg.d/shells_zsh-users_zsh-autosuggestions.gpg > /dev/null
+        sudo apt update
+        sudo apt install zsh-autosuggestions -y
 
     - name: Installation de Oh-my-Zsh
       shell: |
         sudo apt install zsh -y
         chsh -s $(which zsh)
         sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
-        echo 'eval "$(zoxide init zsh)"' >> ~/.zshrc
+
+    - name: Configurer le thème et les plugins pour Zsh
+      lineinfile:
+        path: ~/.zshrc
+        regexp: '^ZSH_THEME'
+        line: 'ZSH_THEME="af-magic"'
+        create: yes
+
+    - name: Configurer les plugins pour Zsh
+      lineinfile:
+        path: ~/.zshrc
+        regexp: '^plugins='
+        line: 'plugins=(git zsh-autosuggestions sudo web-search)'
+        create: yes
+
+    - name: Ajouter des configurations personnalisées à ~/.zshrc
+      blockinfile:
+        path: ~/.zshrc
+        block: |
+          # Create directory and go in it
+          function mk() {
+              mkdir -p "$1" && cd "$1"
+          }
+
+          # Set NeoVim as default editor
+          export EDITOR=nvim
+
+          # Function to open files with kwrite in the background, detached from terminal
+          function kwrite() {
+              nohup kwrite "$1" >/dev/null 2>&1 &
+          }
+
+          alias n="nvim"
+          alias o="xdg-open ."
+          alias op="xdg-open"
+          alias upup="sudo apt update && sudo apt upgrade -y"
+
+    - name: Configurer Zoxide pour Zsh
+      lineinfile:
+        path: ~/.zshrc
+        line: 'eval "$(zoxide init zsh)"'
+        create: yes
+
+    - name: Configurer fzf pour Zsh
+      lineinfile:
+        path: ~/.zshrc
+        line: '[ -f ~/.fzf.zsh ] && source ~/.fzf.zsh'
+        create: yes
+
+    - name: Recharger la configuration Zsh
+      shell: source ~/.zshrc
+      ignore_errors: yes
+
+    - name: Installation de Neovim
+      apt:
+        name: neovim
+        state: present
+
+    - name: Installation de LazyVim
+      shell: |
+        git clone https://github.com/LazyVim/starter ~/.config/nvim
+        rm -rf ~/.config/nvim/.git
 
     - name: Installation de JetBrains Toolbox
       shell: |
