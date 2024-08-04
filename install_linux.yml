@@ -35,6 +35,7 @@
       - gnome-software-plugin-flatpak
       - gnome-tweaks
       - neovim
+      - gnome-shell-extension-manager
 
   tasks:
     - name: Mise à jour et mise à niveau du système
