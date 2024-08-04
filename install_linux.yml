@@ -198,10 +198,8 @@
         deb: /tmp/virtualbox.deb
 
     - name: Ajout de l'utilisateur actuel au groupe Docker
-      user:
-        name: "{{ ansible_user_id }}"
-        groups: docker
-        append: yes
+      shell: |
+        sudo gpasswd -a {{ ansible_user_id }} docker
 
     - name: Configurer "click-action" pour Gnome Shell
       shell: |
