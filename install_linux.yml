@@ -149,20 +149,27 @@
         git clone https://github.com/LazyVim/starter ~/.config/nvim
         rm -rf ~/.config/nvim/.git
 
-    - name: Installation de JetBrains Toolbox
-      shell: |
-        wget https://download.jetbrains.com/toolbox/jetbrains-toolbox-1.22.10970.tar.gz
-        tar -xzf jetbrains-toolbox-1.22.10970.tar.gz
-        sudo mv jetbrains-toolbox-*/jetbrains-toolbox /usr/local/bin/
-
-    - name: Télécharger le package Insync
-      get_url:
-        url: https://cdn.insynchq.com/builds/linux/3.9.3.60019/insync_3.9.3.60019-noble_amd64.deb
-        dest: /tmp/insync.deb
-
-    - name: Installer Insync
+    - name: Installation de libfuse2 (prérequis pour JetBrains Toolbox)
       apt:
-        deb: /tmp/insync.deb
+        name: libfuse2
+        state: present
+
+    - name: Télécharger le package JetBrains Toolbox
+      get_url:
+        url: https://download.jetbrains.com/toolbox/jetbrains-toolbox-1.28.1.15219.tar.gz
+        dest: /tmp/jetbrains-toolbox.tar.gz
+
+    - name: Extraire le package JetBrains Toolbox
+      unarchive:
+        src: /tmp/jetbrains-toolbox.tar.gz
+        dest: /tmp/
+        remote_src: yes
+
+    - name: Exécuter JetBrains Toolbox
+      shell: |
+        /tmp/jetbrains-toolbox-*/jetbrains-toolbox &
+      async: 30
+      poll: 0
 
     - name: Installation de Microsoft Teams
       snap:
